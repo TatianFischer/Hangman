@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    {{ 'game.title' |trans }}
+{% endblock %}
+
+{% block body %}
+    <p class="attempts">
+        {{ 'game.reamaining_attemps' | transchoice(10) }}
+    </p>
+
+    <ul class="word_letters">
+        {# for let in app.get.session('arrayLetter') #}
+        {% for let in letters %}
+            <li class="letter hidden">
+                {{ let }}
+            </li>
+        {% endfor %}
+    </ul>
+
+    <br class="clearfix" />
+
+    <p class="attempts">
+        <a href="/game/reset">Reset the game</a>
+    </p>
+
+    <br class="clearfix" />
+
+    <h2>Try a letter</h2>
+
+    <ul>
+        {% for letter in  'a'..'z' %}
+            <li class="letter">
+                <a href="{{ path('app_game_playletter', {letter:letter}) }}">
+                    {{ letter }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <h2>Try a word</h2>
+
+    <form action="{{ path('app_game_playword') }}" method="post">
+        <p>
+            <label for="word">Word:</label>
+            <input type="text" id="word" name="word"/>
+            <button type="submit">Let me guess...</button>
+        </p>
+    </form>
+{% endblock %}

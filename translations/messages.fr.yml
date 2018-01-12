@@ -1,0 +1,4 @@
+game.title: 'Devinez le mot caché'
+game.reamaining_attemps: '{0} Le jeu est fini|
+                          {1} Dernier essai|
+                          [2,Inf] Vous avez encore %count% essais restants'
