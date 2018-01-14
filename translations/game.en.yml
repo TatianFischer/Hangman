@@ -1,0 +1,13 @@
+fail.title: 'Game is over!'
+fail.subtitle: 'Oops, you lost this game!'
+fail.message: "Sorry, you didn't find the word %word%!"
+win.title: "Game is won!"
+win.subtitle: "Yeah! You won this game!"
+win.message: "Congratulations, you found the word %word%!"
+game.title: 'Guess the mysterious word'
+game.reamaining_attemps: '{0} Game is over| {1} Last attempt| [2,Inf] You still have %count% remaining attempts'
+play.reset_game: 'Reset the game'
+play.try_letter: 'Try a letter'
+play.try_word: 'Try a word'
+play.word: 'Word :'
+play.submit: 'Let me guess'

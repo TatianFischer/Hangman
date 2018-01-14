@@ -1,4 +1,1 @@
-game.title: 'Guess the mysterious word'
-game.reamaining_attemps: '{0} Game is over|
-                          {1} Last attempt|
-                          [2,Inf] You still have %count% remaining attempts'
+
