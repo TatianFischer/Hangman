@@ -24,8 +24,18 @@
                 <div id="content">
 
                     <h2>{% block title %}{% endblock %}</h2>
-                    {% block body %}
-                    {% endblock %}
+
+                    {% if app.session.flashBag.has('notice') %}
+                        <div class="flash-notice">
+                            <ul>
+                                {% for message in app.session.flashBag.get('notice') %}
+                                    <li>{{ message|trans }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    {% block body %}{% endblock %}
 
                 </div>
                 <div id="sidebar">

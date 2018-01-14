@@ -6,7 +6,7 @@
  * Time: 13:59
  */
 
-namespace AppBundle\Model;
+namespace AppBundle\Game;
 
 
 use Symfony\Component\HttpFoundation\Session\SessionInterface;

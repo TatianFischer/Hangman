@@ -6,14 +6,14 @@
 
 {% block body %}
     <p class="attempts">
-        {{ 'game.reamaining_attemps' | transchoice(10) }}
+        {{ 'game.reamaining_attemps' | transchoice(game.remainingAttempts) }}
     </p>
 
     <ul class="word_letters">
         {# for let in app.get.session('arrayLetter') #}
-        {% for let in letters %}
-            <li class="letter hidden">
-                {{ let }}
+        {% for let in game.word|split('') %}
+            <li class="letter {{ game.isLetterFound(let) ? 'guessed' : 'hidden' }}">
+                {{- game.isLetterFound(let) ? let|upper : '?' -}}
             </li>
         {% endfor %}
     </ul>
@@ -21,30 +21,32 @@
     <br class="clearfix" />
 
     <p class="attempts">
-        <a href="/game/reset">Reset the game</a>
+        <a href="{{ path('app_game_reset') }}">
+            {{- 'play.reset_game'|trans -}}
+        </a>
     </p>
 
     <br class="clearfix" />
 
-    <h2>Try a letter</h2>
+    <h2>{{ 'play.try_letter'|trans }}</h2>
 
     <ul>
-        {% for letter in  'a'..'z' %}
+        {% for letter in 'a'..'z' if letter not in game.triedLetters %}
             <li class="letter">
-                <a href="{{ path('app_game_playletter', {letter:letter}) }}">
-                    {{ letter }}
+                <a href="{{ path('app_game_play_letter', {'letter': letter}) }}">
+                    {{- letter|upper -}}
                 </a>
             </li>
         {% endfor %}
     </ul>
 
-    <h2>Try a word</h2>
+    <h2>{{ 'play.try_word'|trans }}</h2>
 
-    <form action="{{ path('app_game_playword') }}" method="post">
+    <form action="{{ path('app_game_play_word') }}" method="post">
         <p>
-            <label for="word">Word:</label>
+            <label for="word">{{ 'play.word'|trans }}</label>
             <input type="text" id="word" name="word"/>
-            <button type="submit">Let me guess...</button>
+            <button type="submit">{{ 'play.submit'|trans }}</button>
         </p>
     </form>
 {% endblock %}
