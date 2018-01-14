@@ -2,42 +2,43 @@
 
 namespace AppBundle\Controller;
 
-use AppBundle\Form\ContactType;
-use AppBundle\Model\ContactSender;
+use AppBundle\Contact\ContactRequestType;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
-use AppBundle\Model\Contact;
 
 class DefaultController extends Controller
 {
     /**
      * @Route("/", name="homepage")
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function indexAction(Request $request)
+    public function indexAction()
     {
         // replace this example code with whatever you need
-        return $this->render('default/index.html.twig', [
-            'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,
-        ]);
+        return $this->render('default/index.html.twig');
     }
 
     /**
      * @Route("/contact-us")
+     *
+     * @var Request $request
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
      */
-    public function contactAction(Request $request, ContactSender $sender)
+    public function contactAction(Request $request)
     {
-        $contact = new Contact();
-        $form = $this->createForm(ContactType::class, $contact);
+        $form = $this->createForm(ContactRequestType::class);
         $form->add('Send', SubmitType::class);
 
         $form->handleRequest($request);
 
         if($form->isSubmitted() && $form->isValid()){
 
-
-            $sender->sendContactEmail($contact);
+            $message = $form->getData()->toSwiftMessage($this->getParameter('contact_recipient'));
+            $this->get('mailer')->send($message);
+            $this->addFlash('notice', 'contact.email_sent');
 
             return $this->redirectToRoute('homepage');
         }
