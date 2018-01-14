@@ -20,7 +20,7 @@ services:
         resource: '../../src/AppBundle/Game/*'
         # you can exclude directories or files
         # but if a service is unused, it's removed anyway
-        exclude: '../../src/AppBundle/{Entity,Repository,Tests,Game}'
+        exclude: '../../src/AppBundle/Game/Game.php'
 
     AppBundle\Manager\:
         resource: '../../src/AppBundle/Manager/*'
@@ -40,3 +40,10 @@ services:
     AppBundle\Model\HangmanGame:
         arguments: ["@session"]
         public: true
+
+    AppBundle\Game\WordList:
+        calls:
+            - ['addLoader',['txt','@AppBundle\Game\Loader\TextFileLoader']]
+            - ['addLoader', ['xml', '@AppBundle\Game\Loader\XmlFileLoader']]
+            - ['addWord',['customer']]
+            - ['addWord',['lemonade']]

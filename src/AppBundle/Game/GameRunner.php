@@ -9,53 +9,155 @@
 namespace AppBundle\Game;
 
 
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class HangmanGame
+class GameRunner
 {
-    private $session;
-    private $idx;
-    const DEFAULT_SESS_IDX = 'letters';
+    /**
+     * The Game context.
+     *
+     * @var GameContextInterface
+     */
+    private $context;
 
-    public function __construct(SessionInterface $session, $sess_idx = self::DEFAULT_SESS_IDX)
+    /**
+     * The list of words.
+     *
+     * @var WordListInterface
+     */
+    private $wordList;
+
+    /**
+     * GameRunner constructor.
+     * @param GameContextInterface $context
+     * @param WordListInterface $wordList
+     */
+    public function __construct(GameContextInterface $context, WordListInterface $wordList)
     {
-        $this->session = $session;
-        $this->idx  = $sess_idx;
+        $this->context  = $context;
+        $this->wordList = $wordList;
     }
 
-    public function getLetters() : array
+    /**
+    * Loads the current game or creates a new one.
+    *
+    * @param int $length The word length to guess
+    *
+    * @return Game
+    */
+    public function loadGame($length = 8)
     {
-        $letters = $this->session->get('letters', []);
+        if($game = $this->context->loadGame()){
+            return $game;
+        }
 
-        return $letters;
+        if(!$this->wordList){
+            throw new \RuntimeException('A WordListInterface instance must be set.');
+        }
+
+        $word = $this->wordList->getRandomWord($length);
+        $game = $this->context->newGame($word);
+        $this->context->save($game);
+
+        return $game;
     }
 
-    public function addSingleLetter(string $l)
+    /**
+     * @param $letter
+     * @return Game
+     * @throws NotFoundHttpException
+     */
+    public function playLetter($letter)
     {
-        $letters = $this->read();
-        $letters[] = $l;
-        $this->write($letters);
+        if(!$game = $this->context->loadGame()){
+            throw $this->createNotFoundException('No game context set.');
+        }
+
+        $game->tryLetter($letter);
+        $this->context->save($game);
+
+        return $game;
     }
 
-    public function addLettersFromWord(string $word)
+    /**
+     * @param $word
+     * @return Game
+     * @throws NotFoundHttpException
+     */
+    public function playWord($word)
     {
-        $letters = $this->read();
-        $letters = array_merge($letters, str_split($word));
-        $this->write($letters);
+        if(!$game = $this->context->loadGame()){
+            throw $this->createNotFoundException('No game context set');
+        }
+
+        $game->tryWord($word);
+        $this->context->save($game);
+
+        return $game;
     }
 
-    public function resetLetters() : void
+    /**
+     * @param \Closure|null $onStatusCallback
+     * @return Game
+     * @throws NotFoundHttpException
+     */
+    public function resetGame(\Closure $onStatusCallback = null)
     {
-        $this->write([]);
+        if(!$game = $this->context->loadGame()){
+            throw $this->createNotFoundException('No game context set.');
+        }
+
+        // Custom logic on failure or on success
+        // thanks to an anonymous function
+        if ($onStatusCallback) {
+            call_user_func_array($onStatusCallback, [ $game ]);
+        }
+
+        $this->context->reset();
+
+        return $game;
     }
 
-    private function read()
+    /**
+     * @return Game
+     * @throws NotFoundHttpException
+     */
+    public function resetGameOnSuccess()
     {
-        return $this->session->get($this->idx, []);
+        $onWonGame = function (Game $game) {
+            if (!$game->isOver()) {
+                throw $this->createNotFoundException('Current game is not yet over.');
+            }
+
+            if (!$game->isWon()) {
+                throw $this->createNotFoundException('Current game must be won.');
+            }
+        };
+
+        return $this->resetGame($onWonGame);
     }
 
-    private function write(array $letters) : void
+    /**
+     * @return Game
+     * @throws NotFoundHttpException
+     */
+    public function resetGameOnFailure()
     {
-        $this->session->set($this->idx, $letters);
+        $onLostGame = function (Game $game) {
+            if (!$game->isOver()) {
+                throw $this->createNotFoundException('Current game is not yet over.');
+            }
+
+            if (!$game->isHanged()) {
+                throw $this->createNotFoundException('Current game must be lost.');
+            }
+        };
+
+        return $this->resetGame($onLostGame);
+    }
+
+    private function createNotFoundException($message)
+    {
+        return new NotFoundHttpException($message);
     }
 }

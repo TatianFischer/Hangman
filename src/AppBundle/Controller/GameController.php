@@ -8,9 +8,11 @@
 
 namespace AppBundle\Controller;
 
-use AppBundle\Model\HangmanGame;
+use AppBundle\Game\GameRunner;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -20,53 +22,109 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class GameController extends Controller
 {
-    private $model;
+    private $game;
 
-    public function __construct(HangmanGame $model)
+    /**
+     * GameController constructor.
+     * @param GameRunner $game
+     */
+    public function __construct(GameRunner $game)
     {
-        $this->model = $model;
+        $this->game = $game;
     }
 
     /**
+     * This action displays the main board to play the game.
+     *
      * @Route("/show")
+     * @Method("GET")
      */
-    public function showAction(Request $request)
+    public function showAction()
     {
-        $letters = $this->model->getLetters();
+        $game = $this->game->loadGame();
 
-        return $this->render('game/show.html.twig', ['letters' => $letters]);
+        return $this->render('game/show.html.twig', ['game' => $game]);
+    }
+
+    /**
+     * This action displays the congratulations page
+     *
+     * @Route("/win")
+     * @Method("GET")
+     */
+    public function winAction()
+    {
+        try{
+            $game = $this->game->resetGameOnSuccess();
+        }catch (\Exception $e){
+            return $this->redirectToRoute('app_game_show');
+        }
+
+        return $this->render('game/win.html.twig', ['game' => $game]);
+    }
+
+    /**
+     * @Route("/fail")
+     * @Method("GET")
+     */
+    public function failAction()
+    {
+        try{
+            $game = $this->game->resetGameOnFailure();
+        }catch (\Exception $e){
+            return $this->redirectToRoute('app_game_show');
+        }
+
+        return $this->render('game/fail.html.twig', ['game' => $game]);
     }
 
     /**
      * @Route("/reset")
+     * @Method("GET")
      */
-    public function resetAction(Request $request)
+    public function resetAction()
     {
-        $model = $this->get(HangmanGame::class);
-        $model->resetLetters();
+        $this->game->resetGame();
 
         return $this->redirectToRoute('app_game_show');
     }
 
     /**
-     * @Route("/play-the-{letter}-letter", requirements={"letter"="[a-z]"})
+     * This action tries one single letter at a time.
+     *
+     * @Route("/play/{letter}", name="app_game_play_letter", requirements={"letter"="[a-z]"})
+     * @Method("GET")
+     *
+     * @var $letter
+     * @return RedirectResponse
      */
-    public function playletterAction(Request $request)
+    public function playLetterAction($letter)
     {
-        $model = $this->get(HangmanGame::class);
-        $model->addSingleLetter($request->attributes->get('letter'));
+        $game = $this->game->playLetter($letter);
 
-        return $this->redirectToRoute('app_game_show');
+        if(!$game->isOver()){
+            return $this->redirectToRoute("app_game_show");
+        }
+
+        return $this->redirectToRoute($game->isWon() ? 'app_game_win' : 'app_game_fail');
     }
 
     /**
-     * @Route("/play-a-word", methods="POST", condition="request.request.get('word') matches '/^[a-z]+$/'")
+     * This action tries one single word at a time.
+     *
+     * @Route(
+     *   path="/play",
+     *   name="app_game_play_word",
+     *   condition="request.request.get('word') matches '/^[a-z]+$/i'"
+     * )
+     * @Method("POST")
+     * @param Request $request
+     * @return RedirectResponse
      */
-    public function playwordAction(Request $request)
+    public function playWorkAction(Request $request)
     {
-        $model = $this->get(HangmanGame::class);
-        $model->addLettersFromWord($request->request->get('word'));
+        $game = $this->game->playWord($request->request->get('word'));
 
-        return $this->redirectToRoute('app_game_show');
+        return $this->redirectToRoute($game->isWon() ? 'app_game_win' : 'app_game_fail');
     }
 }
